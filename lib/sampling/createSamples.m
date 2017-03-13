@@ -65,15 +65,21 @@ switch settings.sampleMode
         indices_nan = indices_nan(:);
         depth_preprocessed(indices_nan) = 0 * ones(size(indices_nan));
     
-        % detect edges using Canny edge detector
-        Iedge = im2uint8(edge(depth_preprocessed, 'canny', 0));
+%         % detect edges using Canny edge detector
+%         Iedge = im2uint8(edge(depth_preprocessed, 'canny', 0));
+% 
+%         % dilate the edges
+%         dilatedI = imdilate(Iedge, se);
+% 
+%         % get sample ID
+%         dilatedI = dilatedI(:);
+%         samples = find(dilatedI > 0);
 
-        % dilate the edges
-        dilatedI = imdilate(Iedge, se);
-
-        % get sample ID
-        dilatedI = dilatedI(:);
-        samples = find(dilatedI > 0);
+        kernel = [0, -1, 0; -1, 4, -1; 0, -1, 0];    % define image filter kernel
+        depth_edge_threshold = 0.4;
+        Iedge = imfilter(depth_preprocessed, kernel);
+        Iedge = Iedge > depth_edge_threshold;
+        samples = find(Iedge > 0);
 
         % remove samples at NaN measurements from Kinect data
         if isKinectDataset( settings )

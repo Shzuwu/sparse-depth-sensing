@@ -5,9 +5,11 @@ function [ depth, rgb, odom, depth_orig ] = getRawData( settings, id )
 filename = sprintf('%s/%s/%03d.mat', getPath('data'), settings.dataset, id);
 load(filename)
 
-%% Metrics conversion
-% convert from milimeters to meters
-depth = double(depth) / 1000;   
+%% convert from milimeters to meters
+% not needed for structure_sensor dataset
+if ~strcmp(settings.dataset, 'structure_sensor')
+    depth = double(depth) / 1000;   
+end
 
 %% Remove invalid depth measurements
 mask_invalid = find(depth <= settings.min_depth | depth >= settings.max_depth);
@@ -51,3 +53,4 @@ end
 
 
 end
+

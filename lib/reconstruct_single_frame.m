@@ -5,8 +5,8 @@ addpath(genpath('lib'))
 %% settings for the default test example
 if nargin < 2    
     close all; clear; clc;
-    settings.dataset = 'ZED';   % test_data, lids_floor6, lab1, ZED, pwlinear_nbCorners=10
-    img_ID = 76;
+    settings.dataset = 'structure_sensor';   % lids_floor6, ZED, structure_sensor
+    img_ID = 250;
 
     createSettings
     
@@ -14,9 +14,9 @@ if nargin < 2
     settings.use_L1 = false;
     settings.use_L1_diag = true;
     settings.use_L1_cart = false;
-    settings.subSample = 0.2;               % subsample original image, to reduce its size
+    settings.subSample = 0.4;               % subsample original image, to reduce its size
     settings.percSamples = 0.01;
-    settings.sampleMode = 'uniform';   % 'uniform', 'harris-feature', 'regular-grid'
+    settings.sampleMode = 'depth-edges';   % 'uniform', 'harris-feature', 'regular-grid', 'depth-edges'
     settings.doAddNeighbors = true;
     settings.stretch.flag = false;
     settings.stretch.delta_y = 0; %1e-5;
@@ -32,26 +32,25 @@ if isKinectDataset(settings) && sum(rgb(:)) == 0
     return
 end
 
-% convert raw data to point cloud  
-if strcmp(settings.pc_frame, 'body')
-    % create null odometry information
-    odometry.Position.X = 0;
-    odometry.Position.Y = 0;
-    odometry.Theta = 0;    
-end
-
-pc_truth_orig = depth2pc(depth_orig, rgb, odometry, settings, false);
-pc_truth = depth2pc(depth, rgb, odometry, settings, false);
-pc_truth_noblack = depth2pc(depth, rgb, odometry, settings, true);
-
-if settings.show_pointcloud
-    fig1 = figure(1);
-    
-    subplot(221)
-    pcshow(pc_truth_noblack, 'MarkerSize', settings.markersize); xlabel('x'); ylabel('y'); zlabel('z'); title('Ground Truth'); 
-else
-    fig1 = [];
-end
+% if settings.show_pointcloud
+%     pc_truth_orig = depth2pc(depth_orig, rgb, odometry, settings, false);
+%     pc_truth = depth2pc(depth, rgb, odometry, settings, false);
+%     pc_truth_noblack = depth2pc(depth, rgb, odometry, settings, true);
+%     
+%     % convert raw data to point cloud  
+%     if strcmp(settings.pc_frame, 'body')
+%         % create null odometry information
+%         odometry.Position.X = 0;
+%         odometry.Position.Y = 0;
+%         odometry.Theta = 0;    
+%     end
+%     
+%     fig1 = figure(1);
+%     subplot(221)
+%     pcshow(pc_truth_noblack, 'MarkerSize', settings.markersize); xlabel('x'); ylabel('y'); zlabel('z'); title('Ground Truth'); 
+% else
+%     fig1 = [];
+% end
 
 %% Create measurements
 samples = createSamples( depth, rgb, settings );
@@ -74,8 +73,8 @@ sampling_matrix = Rfull(samples, :);
 img_sample = nan * ones(size(depth));
 img_sample(samples) = 255 * xGT(samples);
 
-% create point cloud
-[pc_samples] = depth2pc(img_sample, rgb, odometry, settings, false);
+% % create point cloud
+% [pc_samples] = depth2pc(img_sample, rgb, odometry, settings, false);
 
 % visualization
 if settings.show_pointcloud
@@ -97,7 +96,7 @@ measured_vector = sampling_matrix * xGT + noise;
 if settings.use_naive
     results.naive = reconstructDepthImage( 'naive', settings, ...
         height, width, sampling_matrix, measured_vector, samples, [], ...
-        depth, rgb, odometry, pc_truth_orig, fig1, 223);
+        depth, rgb);
 end
 
 %% L1 
@@ -105,7 +104,7 @@ if settings.use_L1
     settings.useDiagonalTerm = false;
     results.L1 = reconstructDepthImage( 'L1', settings, ...
         height, width, sampling_matrix, measured_vector, samples, results.naive.depth_rec(:), ...
-        depth, rgb, odometry, pc_truth_orig, fig1, 224);
+        depth, rgb);
 end
 
 %% L1-diag
@@ -113,21 +112,21 @@ if settings.use_L1_diag
     settings.useDiagonalTerm = true;
     results.L1_diag = reconstructDepthImage( 'L1-diag', settings, ...
         height, width, sampling_matrix, measured_vector, samples, results.naive.depth_rec(:), ...
-        depth, rgb, odometry, pc_truth_orig, fig1, 224);
+        depth, rgb);
 end
 
 %% L1-cart 
 if settings.use_L1_cart
     results.L1_cart = reconstructDepthImage( 'L1-cart', settings, ...
         height, width, sampling_matrix, measured_vector, samples, results.naive.depth_rec(:), ...
-        depth, rgb, odometry, pc_truth_orig, fig1, 224);
+        depth, rgb);
 end
 
 %% Save results
-results.pc_truth_noblack = pc_truth_noblack;
-results.pc_truth = pc_truth;
-results.pc_truth_orig = pc_truth_orig;
-results.pc_samples = pc_samples;
+% results.pc_truth_noblack = pc_truth_noblack;
+% results.pc_truth = pc_truth;
+% results.pc_truth_orig = pc_truth_orig;
+% results.pc_samples = pc_samples;
 results.img_sample = img_sample;
 
 results.rgb = rgb;

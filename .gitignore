@@ -1,3 +1,7 @@
+# Results folder #
+##################
+results/*
+
 # Compiled source #
 ###################
 *.com
